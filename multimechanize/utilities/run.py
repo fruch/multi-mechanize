@@ -77,7 +77,7 @@ def run_test(project_name, cmd_opts, remote_starter=None):
         remote_starter.test_running = True
         remote_starter.output_dir = None
 
-    run_time, rampup, results_ts_interval, console_logging, progress_bar, results_database, post_run_script, xml_report, user_group_configs = configure(project_name, cmd_opts)
+    run_time, rampup, results_ts_interval, console_logging, progress_bar, results_database, post_run_script, xml_report, user_group_configs, global_config = configure(project_name, cmd_opts)
 
     run_localtime = time.localtime()
     if cmd_opts.output_dir:
@@ -100,7 +100,7 @@ def run_test(project_name, cmd_opts, remote_starter=None):
         for _ in range(ug_config.num_processes):
             cur_rampup = rampup + ug_config.rampup
             ug = core.UserGroup(queue, process_num, ug_config.name, ug_config.num_threads,
-                                script_file, run_time, cur_rampup, ug_config)
+                                script_file, run_time, cur_rampup, ug_config, global_config)
             user_groups.append(ug)
             process_num += 1
     for user_group in user_groups:
@@ -183,7 +183,7 @@ def run_test(project_name, cmd_opts, remote_starter=None):
 def rerun_results(project_name, cmd_opts, results_dir):
     output_dir = '%s/%s/results/%s/' % (cmd_opts.projects_dir, project_name, results_dir)
     saved_config = '%s/config.cfg' % output_dir
-    run_time, rampup, results_ts_interval, console_logging, progress_bar, results_database, post_run_script, xml_report, user_group_configs = configure(project_name, cmd_opts, config_file=saved_config)
+    run_time, rampup, results_ts_interval, console_logging, progress_bar, results_database, post_run_script, xml_report, user_group_configs, global_config = configure(project_name, cmd_opts, config_file=saved_config)
     print '\n\nanalyzing results...\n'
     results.output_results(output_dir, 'results.csv', run_time, rampup, results_ts_interval, user_group_configs, xml_report)
     print 'created: %sresults.html\n' % output_dir
@@ -202,6 +202,7 @@ def configure(project_name, cmd_opts, config_file=None):
             config_file = '%s/%s/%s' % (cmd_opts.projects_dir, project_name, cmd_opts.config_file)
     config.read(config_file)
     print config_file
+    global_config = dict(config.items('global'))
     for section in config.sections():
         if section == 'global':
             run_time = config.getint(section, 'run_time')
@@ -253,7 +254,7 @@ def configure(project_name, cmd_opts, config_file=None):
             user_group_configs.append(ug_config)
 
     return (run_time, rampup, results_ts_interval, console_logging, progress_bar, results_database,
-            post_run_script, xml_report, user_group_configs)
+            post_run_script, xml_report, user_group_configs, global_config)
 
 
 class UserGroupConfig(object):
