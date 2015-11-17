@@ -11,9 +11,9 @@ import SimpleXMLRPCServer
 import thread
 
 
-def launch_rpc_server(bind_addr, port, project_name, run_callback):
+def launch_rpc_server(bind_addr, port, project_name, run_callback, cmd_opts):
     server = SimpleXMLRPCServer.SimpleXMLRPCServer((bind_addr, port), logRequests=False)
-    server.register_instance(RemoteControl(project_name, run_callback))
+    server.register_instance(RemoteControl(project_name, run_callback, cmd_opts))
     server.register_introspection_functions()
     print '\nMulti-Mechanize: %s listening on port %i' % (bind_addr, port)
     print 'waiting for xml-rpc commands...\n'
@@ -24,9 +24,10 @@ def launch_rpc_server(bind_addr, port, project_name, run_callback):
 
 
 class RemoteControl(object):
-    def __init__(self, project_name, run_callback):
+    def __init__(self, project_name, run_callback, cmd_opts):
         self.project_name = project_name
         self.run_callback = run_callback
+        self.cmd_opts = cmd_opts
         self.test_running = False
         self.output_dir = None
 
@@ -34,7 +35,7 @@ class RemoteControl(object):
         if self.test_running:
             return 'Test Already Running'
         else:
-            thread.start_new_thread(self.run_callback, (self,))
+            thread.start_new_thread(self.run_callback, (self.project_name, self.cmd_opts,self,))
             return 'Test Started'
 
     def check_test_running(self):
